@@ -72,7 +72,9 @@ export const GeocoderAttribution = () => null;
 class GeocoderMapbox {
   getClient() {
     const libLoaded = typeof window !== 'undefined' && window.mapboxgl && window.mapboxSdk;
-    debugger
+    console.log(window);
+    console.log(window.mapboxgl);
+    console.log(window.mapboxSdk);
     if (!libLoaded) {
       throw new Error('Mapbox libraries are required for GeocoderMapbox');
     }
