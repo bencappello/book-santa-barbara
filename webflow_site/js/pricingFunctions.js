@@ -6,13 +6,21 @@ function dom(id) {
 var globalGuestsSlider = dom("guests-slider");
 var guestsInput = dom("guest-count-input");
 
+// Helper function to get guest count with null check
+function getGuestCount() {
+    return globalGuestsSlider ? globalGuestsSlider.value || 0 : 0;
+}
+
 //total details
-dom("total-cost-display").innerHTML = "$0" 
-dom("deposit-display").innerHTML = "$0";
+var totalCostDisplay = dom("total-cost-display");
+var depositDisplay = dom("deposit-display");
+if (totalCostDisplay) totalCostDisplay.innerHTML = "$0";
+if (depositDisplay) depositDisplay.innerHTML = "$0";
 
 //Calculation
 function calculateChange() {
-    var eventDateObject = new Date(dom("event-date-input").value);
+    var eventDateInput = dom("event-date-input");
+    var eventDateObject = eventDateInput ? new Date(eventDateInput.value) : new Date();
     var deposit;
     var totalCost;
 
@@ -20,22 +28,28 @@ function calculateChange() {
     totalCost = servicesTotal();
 
     deposit = Math.floor(totalCost * 0.2);
-    dom("total-cost-display").innerHTML = "$" + totalCost;
-    dom("total-cost-input").value = totalCost;
-    dom("deposit-display").innerHTML = "$" + deposit;
-    dom("deposit-input").value = deposit;
-
+    
+    var totalCostDisplay = dom("total-cost-display");
+    var totalCostInput = dom("total-cost-input");
+    var depositDisplay = dom("deposit-display");
+    var depositInput = dom("deposit-input");
+    
+    if (totalCostDisplay) totalCostDisplay.innerHTML = "$" + totalCost;
+    if (totalCostInput) totalCostInput.value = totalCost;
+    if (depositDisplay) depositDisplay.innerHTML = "$" + deposit;
+    if (depositInput) depositInput.value = deposit;
 
     //EVENT INFO
+    var eventNameInput = dom("event-name-input");
     handleEventInput(
-        dom("event-name-input"),
+        eventNameInput,
         dom("event-name-display"),
         dom("event-name-display"),
-        dom("event-name-input").value
+        eventNameInput ? eventNameInput.value : ""
     );
 
     handleEventInput(
-        dom("event-date-input"),
+        eventDateInput,
         dom("date-line-item"),
         dom("event-date-display"),
         eventDateObject.toLocaleString("en-US", {
@@ -45,53 +59,69 @@ function calculateChange() {
         })
     );
 
+    var startTimeInput = dom("start-time-input");
     handleEventInput(
-        dom("start-time-input"),
+        startTimeInput,
         dom("start-line-item"),
         dom("start-time-display"),
-        dom("start-time-input").value.replace(":00", ":00 ")
+        startTimeInput ? startTimeInput.value.replace(":00", ":00 ") : ""
     );
 
+    var endTimeInput = dom("end-time-input");
     handleEventInput(
-        dom("end-time-input"),
+        endTimeInput,
         dom("end-line-item"),
         dom("end-time-display"),
-        dom("end-time-input").value.replace(":00", ":00 ")
+        endTimeInput ? endTimeInput.value.replace(":00", ":00 ") : ""
     );
 
-    guestsInput.value = globalGuestsSlider.value;
-    dom("guest-count-display").innerHTML = globalGuestsSlider.value;
+    // Improved guest handling with null checks
+    var guestCount = getGuestCount();
+    if (guestsInput) {
+        guestsInput.value = guestCount;
+    }
+    
+    var guestCountDisplay = dom("guest-count-display");
+    if (guestCountDisplay) {
+        guestCountDisplay.innerHTML = guestCount;
+    }
 
-    if (globalGuestsSlider.value && globalGuestsSlider.value !== '0') { 
-        dom("guests-line-item").style.display = 'flex';
+    if (guestCount && guestCount !== '0') { 
+        var guestsLineItem = dom("guests-line-item");
+        if (guestsLineItem) {
+            guestsLineItem.style.display = 'flex';
+        }
     }
 };
 
 function handleEventInput(inputElement, lineElement, contentElement, content) {
-    if (inputElement.value) { 
-        lineElement.style.display = 'flex';
-        contentElement.innerHTML = content;
+    if (inputElement && inputElement.value) { 
+        if (lineElement) {
+            lineElement.style.display = 'flex';
+        }
+        if (contentElement) {
+            contentElement.innerHTML = content;
+        }
     };
 };
 
-
 //------------------------------------FUNCTIONS ----------------------------------------------------
 
-
 function calculateBaseDayCost() {
-  var eventDate = new Date(Date.parse(eventDateInput.value));
-  var day = eventDate.getDay();
+    var eventDateInput = dom("event-date-input");
+    if (!eventDateInput) return 1500;
+    
+    var eventDate = new Date(Date.parse(eventDateInput.value));
+    var day = eventDate.getDay();
 
-  if (day === 5 || day === 0 ) {
-  	return 2500;
-  } else if (day === 6) {
-  	return 3000;
-  } else {
-  	return 1500;
-  }
+    if (day === 5 || day === 0 ) {
+        return 2500;
+    } else if (day === 6) {
+        return 3000;
+    } else {
+        return 1500;
+    }
 };
-
-
 
 //SERVICE FUNCTION
 function servicesTotal() {
@@ -100,13 +130,11 @@ function servicesTotal() {
 
 function service(config = {}) {
     config['itemType'] = 'service';
-
     return handleItem(config);
 }
 
 function option(config = {}) {
     config['itemType'] = 'option';
-    
     return handleItem(config);
 }
 
@@ -130,7 +158,11 @@ function handleItem(config = {}) {
     var input2 = dom(properties.serviceName + optionName + "-input-2");
     var slider1Value = dom(properties.serviceName + optionName + "-slider") ? dom(properties.serviceName + optionName + "-slider").value * properties.sliderStep : 1;
     var slider2Value = dom(properties.serviceName + optionName + "-slider-2") ? dom(properties.serviceName + optionName + "-slider-2").value * properties.sliderStep2 : 1;
-    var globalTime = calculateHoursBetween(dom("start-time-input").value, dom("end-time-input").value);
+    
+    var startTimeInput = dom("start-time-input");
+    var endTimeInput = dom("end-time-input");
+    var globalTime = (startTimeInput && endTimeInput) ? calculateHoursBetween(startTimeInput.value, endTimeInput.value) : 0;
+    var guestCount = getGuestCount(); // Use helper function
 
     if (properties.dayTiers) {
         let numberToDay = {
@@ -142,11 +174,11 @@ function handleItem(config = {}) {
             5: 'fri',
             6:'sat'
         };
-        let eventDate = new Date(Date.parse(dom("event-date-input").value));
-        let dayOfWeekNumber = eventDate.getDay();
-        let dayName = numberToDay[dayOfWeekNumber];
-
-        if(dom("event-date-input").value) {
+        let eventDateInput = dom("event-date-input");
+        if (eventDateInput && eventDateInput.value) {
+            let eventDate = new Date(Date.parse(eventDateInput.value));
+            let dayOfWeekNumber = eventDate.getDay();
+            let dayName = numberToDay[dayOfWeekNumber];
             properties.cost = properties.dayTiers[dayName];
         } else {
             properties.cost = 'Choose date';
@@ -171,27 +203,20 @@ function handleItem(config = {}) {
         itemCost = globalTime * properties.cost;
     }
     if (properties.type == 'global-guests') {
-        itemCost = globalGuestsSlider.value * properties.cost;
+        itemCost = guestCount * properties.cost; // Use null-safe guest count
     }
     if (properties.type == 'global-time-and-guests') {
-        itemCost = globalGuestsSlider.value * globalTime * properties.cost;
+        itemCost = guestCount * globalTime * properties.cost; // Use null-safe guest count
     }
 
     //Working Hours Fee
     if (properties.type == 'dart-garden-buyout-fee') {
         itemCost = calculateDartGardenBuyoutFee();
     }
-    if (properties.type == 'global-guests') {
-        itemCost = globalGuestsSlider.value * properties.cost;
-    }
-    if (properties.type == 'global-time-and-guests') {
-        itemCost = globalGuestsSlider.value * globalTime * properties.cost;
-    }
-
 
     //Guest Tiers
     if (properties.guestTiers) {
-        let guestValueToUse = properties.type == 'global-guests' ? globalGuestsSlider.value : slider1Value;
+        let guestValueToUse = properties.type == 'global-guests' ? guestCount : slider1Value; // Use null-safe guest count
 
         let sortedGuestTiers = Object.keys(properties.guestTiers).map(key => parseInt(key)).sort((a, b) => a - b);
         itemCost = properties.guestTiers[sortedGuestTiers.at(-1)];
@@ -218,31 +243,36 @@ function handleItem(config = {}) {
         try {
             throw new Error(`Not specified if ${properties.serviceName} ${properties.optionName} is a Service or an Option`);
         } catch (e) {
-            console.error(e.message); // Output: Something went wrong!
+            console.error(e.message);
         }
     }
 };
 
-
-//Dart Garden Buyour Fee
+//Dart Garden Buyout Fee
 function calculateDartGardenBuyoutFee() {
     // 1) Get the event date
-    const eventDateString = dom("event-date-input").value;
+    var eventDateInput = dom("event-date-input");
+    const eventDateString = eventDateInput ? eventDateInput.value : "";
     if (!eventDateString) return 0; // no date chosen => no fee
 
     const eventDate = new Date(eventDateString);
     const dayOfWeek = eventDate.getDay(); 
     // dayOfWeek: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 
-    // 2) Determine venue’s working hours for the given day
+    // 2) Determine venue's working hours for the given day
     //    Monday–Thursday => 7 AM – 16 (4 PM)
     //    Friday–Sunday   => 7 AM – 17 (5 PM)
     let venueStartHour = 7;
     let venueEndHour = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6) ? 17 : 16;
 
-    // 3) Parse the event’s start/end times in 24-hour format
-    const startTimeString = dom("start-time-input").value;
-    const endTimeString   = dom("end-time-input").value;
+    // 3) Parse the event's start/end times in 24-hour format
+    var startTimeInput = dom("start-time-input");
+    var endTimeInput = dom("end-time-input");
+    
+    const startTimeString = startTimeInput ? startTimeInput.value : "";
+    const endTimeString = endTimeInput ? endTimeInput.value : "";
+    
+    if (!startTimeString || !endTimeString) return 0;
 
     const start = parseTimeString(startTimeString); // => { hours, minutes }
     const end   = parseTimeString(endTimeString);   // => { hours, minutes }
@@ -251,11 +281,6 @@ function calculateDartGardenBuyoutFee() {
     let eventEndHour   = end.hours;
 
     // 4) Calculate overlap in hours
-    //    Overlap is the intersection between [eventStartHour, eventEndHour] & [venueStartHour, venueEndHour]
-    //    We'll ignore minutes for simplicity or you can factor them in if desired.
-    //    If your events can cross midnight, you’ll need more advanced logic. 
-    //    But typically, the user picks a single date.
-
     const overlapStart = Math.max(eventStartHour, venueStartHour);
     const overlapEnd   = Math.min(eventEndHour, venueEndHour);
     let overlapHours   = overlapEnd - overlapStart;
@@ -275,9 +300,6 @@ function calculateDartGardenBuyoutFee() {
     }
 }
 
-
-
-
 function handleMandatoryFee(serviceName, optionName, cost, dollarCost = true, showLineItem = true, summaryPrefix = false) {
     var serviceSection = dom(serviceName + "-service-section");
     var optionLineItem
@@ -289,11 +311,9 @@ function handleMandatoryFee(serviceName, optionName, cost, dollarCost = true, sh
 
     if (serviceSection && cost > 0) {
         addOrShowMandatoryFeeLineItem(serviceName, summaryPrefix, displayCost);
-
         return cost;
     } else {
         if (optionLineItem) { optionLineItem.style.display = 'none' };
-
         return 0;
     }
 };
@@ -304,9 +324,10 @@ function addOrShowMandatoryFeeLineItem(serviceName, optionName, displayCost) {
     var costDisplay = dom(serviceName + '-' + optionName + "-cost-display");
 
     if (optionLineItem) {
-
         optionLineItem.style.display = 'flex';
-        costDisplay.innerHTML = displayCost;
+        if (costDisplay) {
+            costDisplay.innerHTML = displayCost;
+        }
     } else {
         // Create option line item
         optionLineItem = document.createElement('div');
@@ -329,11 +350,12 @@ function addOrShowMandatoryFeeLineItem(serviceName, optionName, displayCost) {
         
         optionLineItem.appendChild(optionTitleDisplay);
         optionLineItem.appendChild(costDisplay);
-        serviceSection.appendChild(optionLineItem);
+        
+        if (serviceSection) {
+            serviceSection.appendChild(optionLineItem);
+        }
     }
 }
-
-
 
 //UNEXPOSED FUNCTIONS
 //OPTIONS
@@ -346,13 +368,11 @@ function handleOption(serviceName, optionName, cost, dollarCost = true, showLine
     if (dollarCost) { displayCost = "$" + displayCost };
     optionLineItem = dom(serviceName + '-' + summaryPrefix + "-option-line-item");
 
-    if (checkbox.checked) {
+    if (checkbox && checkbox.checked) {
         addOrShowOption(serviceName, summaryPrefix, displayCost);
-
         return cost;
     } else {
         if (optionLineItem) { optionLineItem.style.display = 'none' };
-
         return 0;
     }
 };
@@ -363,9 +383,10 @@ function addOrShowOption(serviceName, optionName, displayCost) {
     var costDisplay = dom(serviceName + '-' + optionName + "-cost-display");
 
     if (optionLineItem) {
-
         optionLineItem.style.display = 'flex';
-        costDisplay.innerHTML = displayCost;
+        if (costDisplay) {
+            costDisplay.innerHTML = displayCost;
+        }
     } else {
         // Create option line item
         optionLineItem = document.createElement('div');
@@ -388,7 +409,10 @@ function addOrShowOption(serviceName, optionName, displayCost) {
         
         optionLineItem.appendChild(optionTitleDisplay);
         optionLineItem.appendChild(costDisplay);
-        serviceSection.appendChild(optionLineItem);
+        
+        if (serviceSection) {
+            serviceSection.appendChild(optionLineItem);
+        }
     }
 }
 
@@ -410,15 +434,13 @@ function handleService(properties, baseCost, baseTime, addedTime = 0) {
         displayCost = "$" + cost;
     }
 
-    if (properties.noCheckbox || checkbox.checked) {
+    if (properties.noCheckbox || (checkbox && checkbox.checked)) {
         addOrShowService(properties.serviceName, displayCost);
         if(optionCheckboxes) { optionCheckboxes.style.display = 'block' };
-
         return cost;
     } else {
         if (serviceSection) { serviceSection.style.display = 'none' };
         if(optionCheckboxes) { optionCheckboxes.style.display = 'none' };
-
         return 0;
     }
 };
@@ -429,7 +451,9 @@ function addOrShowService(serviceName, displayCost) {
 
     if (serviceSection) {
         serviceSection.style.display = 'block';
-        costDisplay.innerHTML = displayCost;
+        if (costDisplay) {
+            costDisplay.innerHTML = displayCost;
+        }
     } else {
         //Create service section
         serviceSection = document.createElement("div");
@@ -446,7 +470,6 @@ function addOrShowService(serviceName, displayCost) {
 
          // Create heading for service
         var serviceHeading = document.createElement('h4');
-        // serviceHeading.classList.add('text-uppercase');
         serviceHeading.textContent = toTitleCase(serviceName) + ' Total';
         
         // Create the cost display
@@ -458,7 +481,11 @@ function addOrShowService(serviceName, displayCost) {
         serviceLineItem.appendChild(serviceHeading);
         serviceLineItem.appendChild(costDisplay);
         serviceSection.appendChild(serviceLineItem);
-        dom('services-summary').appendChild(serviceSection);
+        
+        var servicesSummary = dom('services-summary');
+        if (servicesSummary) {
+            servicesSummary.appendChild(serviceSection);
+        }
     }
 };
 
@@ -473,7 +500,6 @@ function calculateServiceTotal(serviceName, baseCost, baseTime, optionCosts, add
     var costWithAddOns;
     var costMultiplier = 1;
 
-
     costMultiplier = (baseTime + addedTime) / baseTime;
     costWithAddOns = !optionCosts ? baseCost : baseCost + optionCosts.reduce((partialSum, a) => partialSum + a, 0);
 
@@ -482,34 +508,37 @@ function calculateServiceTotal(serviceName, baseCost, baseTime, optionCosts, add
 
 //Global Time Parsing Functions
 function parseTimeString(timeString) {
-  const [time, modifier] = timeString.split(/(am|pm)/);
-  let [hours, minutes] = time.split(':').map(Number);
+    if (!timeString) return { hours: 0, minutes: 0 };
+    
+    const [time, modifier] = timeString.split(/(am|pm)/);
+    let [hours, minutes] = time.split(':').map(Number);
 
-  if (modifier === 'pm' && hours !== 12) {
-      hours += 12;
-  }
-  if (modifier === 'am' && hours === 12) {
-      hours = 0;
-  }
+    if (modifier === 'pm' && hours !== 12) {
+        hours += 12;
+    }
+    if (modifier === 'am' && hours === 12) {
+        hours = 0;
+    }
 
-  return { hours, minutes };
+    return { hours, minutes };
 }
 
 function calculateHoursBetween(startTime, endTime) {
-  const start = parseTimeString(startTime);
-  const end = parseTimeString(endTime);
+    if (!startTime || !endTime) return 0;
+    
+    const start = parseTimeString(startTime);
+    const end = parseTimeString(endTime);
 
-  let startInMinutes = start.hours * 60 + start.minutes;
-  let endInMinutes = end.hours * 60 + end.minutes;
+    let startInMinutes = start.hours * 60 + start.minutes;
+    let endInMinutes = end.hours * 60 + end.minutes;
 
-  let diffInMinutes = endInMinutes - startInMinutes;
-  if (diffInMinutes < 0) {
-      diffInMinutes += 24 * 60; // handle cases where endTime is on the next day
-  }
+    let diffInMinutes = endInMinutes - startInMinutes;
+    if (diffInMinutes < 0) {
+        diffInMinutes += 24 * 60; // handle cases where endTime is on the next day
+    }
 
-  return diffInMinutes / 60;
+    return diffInMinutes / 60;
 }
-
 
 //After window loads
 window.onload = function() {
